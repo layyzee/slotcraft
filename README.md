@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🏥 SlotCraft — Smart Clinic Queue & Appointment SaaS
 
-## Getting Started
+> **Zero-Waiting-Room digital queue system tailored for private clinics in suburban Mumbai (Dombivli, Kalyan & MMR).**  
+> Built with 100% zero-cost local-first architecture (Next.js 16 App Router + native `node:sqlite` + Web Audio API).
 
-First, run the development server:
+[![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-v26+-059669.svg)](https://nodejs.org)
+[![Next.js](https://img.shields.io/badge/Next.js-16.4-black.svg)](https://nextjs.org)
+[![Zero Cost](https://img.shields.io/badge/Cost-%E2%82%B90%20Free%20Tier-emerald.svg)](#architecture)
 
+---
+
+## 📌 The Problem & Real-World Context
+
+In suburban Mumbai transit hubs like **Dombivli East (Phadke Road / Manpada Road)**, private dental, pediatric, and general clinics experience a severe peak rush between **6:30 PM and 9:00 PM** as thousands of commuters return on Central Railway local trains.
+
+* **Traditional Clinic Chaos:** 12–15 tired patients crammed in a small lobby, coughing on each other. Front desk staff are bombarded every 5 minutes with *"Kitna time lagega? Mera number kab aayega?"*.
+* **Costly No-Shows:** Frustrated patients leave without consulting, costing clinics ₹1,500–₹3,000 every evening in lost chair time.
+* **The SlotCraft Solution:** Commuters book from their phone while on the train, track their live token in real-time, and walk in right when 1 patient remains ahead. Receptionists call patients with one tap or keyboard hotkey (`Key N`).
+
+---
+
+## 🚀 Live System Portals
+
+| Portal | Route | Target User | Key Capabilities |
+|---|---|---|---|
+| **Commercial Hub** | `/` | Everyone / Doctors | Interactive live queue simulation, clinic overview, ROI calculator & FAQ. |
+| **Patient Booking** | `/book` | Commuters & Patients | 3-step mobile booking (Treatment $\rightarrow$ Slot $\rightarrow$ Details) & immediate digital token issuance. |
+| **Live Digital Token** | `/token/[id]` | Commuters | Live boarding pass countdown, 3-step progress bar, station commute guidance, self-service +15m delay buffer & WhatsApp link. |
+| **Reception Command Desk** | `/reception` | Front-Desk Staff | One-tap "Call Next Patient", keyboard hotkey (`N`), 5-second walk-in modal, live patient search, and CSV register export. |
+| **Doctor Consultation Room** | `/doctor` | Clinic Owner / Doctor | Clinical notes, Rx presets, printable official clinic letterhead (`window.print()`), and daily earnings counter (₹). |
+| **Waiting Room TV Mode** | `/display` | Waiting Lobby | Full-screen large-format board for 43"/55" wall monitors with automated two-tone hospital chimes and speech synthesis. |
+
+---
+
+## 🛠️ Architecture & Tech Stack (100% Free & Local-First)
+
+* **Full-Stack Framework:** [Next.js 16](https://nextjs.org) with Turbopack & React 19 Client Components.
+* **Styling & Design System:** Tailwind CSS v4 with [Geist](https://vercel.com/font) typography, based on [ui-ux-pro-max](https://github.com) accessibility guidelines (WCAG 4.5:1 text contrast).
+* **Database:** Native Node.js `node:sqlite` (`DatabaseSync`). Zero C++ build tools, zero external database subscriptions, auto-initialized and seeded on first run.
+* **Audio Synthesis:** Native **Web Audio API** (`lib/sound.js`) producing pleasant harmonic hospital chimes (C5 $\rightarrow$ E5) without external audio files.
+* **WhatsApp Engine:** Native `https://wa.me/` direct URL protocol for one-click patient notifications without paid Meta API keys.
+
+---
+
+## ⚡ Quickstart
+
+### Prerequisites
+* Node.js v22+ or v26+ (for native `node:sqlite` support).
+
+### 1. Clone & Install
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/layyzee/slotcraft.git
+cd slotcraft
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Run the App
+```bash
+# Using the one-click macOS launcher
+./start.sh
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+# Or manually:
+npm run dev -- -p 3001
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3001](http://localhost:3001) in your browser.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 📂 Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+slotcraft_app/
+├── app/
+│   ├── api/
+│   │   ├── book/          # Booking endpoint (generates tokens)
+│   │   ├── clinic/        # Clinic profile & pricing menu
+│   │   ├── export/        # Daily register CSV download
+│   │   └── queue/         # Live queue management (call_next, delay, cancel)
+│   ├── book/              # Mobile patient booking screen
+│   ├── display/           # Full-screen waiting room lobby TV mode
+│   ├── doctor/            # Doctor consultation EMR & printable Rx
+│   ├── reception/         # Front-desk command desk (Kanban + Caller)
+│   ├── token/[id]/        # Live patient token tracker & commuter pass
+│   ├── layout.js          # Root layout & Geist typography
+│   └── page.js            # High-converting commercial landing page
+├── lib/
+│   ├── db.js              # Native node:sqlite engine & seed data
+│   ├── sound.js           # Web Audio API synthesized hospital chime
+│   └── whatsapp.js        # Zero-cost WhatsApp direct URL generator
+├── BUSINESS_PLAYBOOK.md   # Setup costs, pricing math & local sales script
+├── ROADMAP.md             # Project phase checklist and milestones
+└── start.sh               # One-click launcher script
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 📈 Commercial & Scaling Strategy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+See [BUSINESS_PLAYBOOK.md](./BUSINESS_PLAYBOOK.md) for the complete operational breakdown:
+* **Operating Cost:** **₹0 – ₹58 / month** (Free tier Vercel + Turso SQLite + Native WhatsApp).
+* **Pricing Model:** **₹999 / month** (Starter) or **₹1,499 / month** (Pro with Lobby TV).
+* **Dombivli Market Potential:** 50 clinics across Dombivli & Kalyan = **₹7.2 Lakh / year ARR** at ~95% profit margin.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 📄 License
+MIT License. Created by [Balaji Palani](https://github.com/layyzee).
