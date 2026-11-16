@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft,
   Clock,
   MapPin,
   Phone,
@@ -13,11 +12,14 @@ import {
   Train,
   Bell,
   Check,
-  Circle,
   MessageSquare,
   XCircle,
-  Printer
+  Printer,
+  Sparkles,
+  ArrowRight,
+  ShieldCheck
 } from 'lucide-react';
+import Navbar from '@/components/Navbar';
 import { playClinicChime } from '@/lib/sound';
 
 function TokenContent() {
@@ -41,7 +43,7 @@ function TokenContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delay_patient', appointmentId: id })
       });
-      setStatusFeedback('Your slot has been buffered (+15 mins) for local train arrival.');
+      setStatusFeedback('Your token has been buffered (+15 mins) for local train arrival.');
       await fetchQueue();
     } catch (err) {
       console.error(err);
@@ -72,19 +74,19 @@ function TokenContent() {
       if (data.success) {
         setQueueStats(data);
         const all = [
+          ...(data.nowServing ? [data.nowServing] : []),
           ...(data.waiting || []),
           ...(data.upcoming || []),
-          ...(data.completed || []),
-          ...(data.nowServing ? [data.nowServing] : [])
+          ...(data.completed || [])
         ];
         const found = all.find((a) => a.id === id);
         if (found) {
           setAppointment(found);
-          // Trigger audible chime if state changed to in_progress
-          if (found.status === 'in_progress' && !prevTurnRef.current && alertEnabled) {
+          const isNowMyTurn = found.status === 'in_progress';
+          if (isNowMyTurn && !prevTurnRef.current && alertEnabled) {
             playClinicChime();
           }
-          prevTurnRef.current = found.status === 'in_progress';
+          prevTurnRef.current = isNowMyTurn;
         }
       }
       setLoading(false);
@@ -124,57 +126,31 @@ function TokenContent() {
   const isMyTurn = appointment?.status === 'in_progress';
   const isCompleted = appointment?.status === 'completed';
   const isArrived = appointment?.status === 'arrived';
+  const isCancelled = appointment?.status === 'cancelled';
 
   const patientsAhead = Math.max(0, myToken - nowServingToken - 1);
   const estimatedWaitMins = patientsAhead * 15;
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 font-sans pb-16">
-      {/* Top Navbar */}
-      <div className="border-b border-slate-200 bg-white sticky top-0 z-40">
-        <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition active:scale-[0.97]"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Clinic Home</span>
-          </Link>
+    <div className="min-h-screen bg-slate-100 text-slate-900 font-sans pb-16 flex flex-col">
+      <Navbar />
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleCopyLink}
-              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-medium flex items-center gap-1 transition"
-              title="Copy token link to share"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5" />}
-              <span className="text-[11px]">{copied ? 'Copied!' : 'Share'}</span>
-            </button>
-
-            <div className="flex items-center gap-2 text-xs text-teal-800 font-semibold bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse"></span>
-              <span>Live Sync</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-md mx-auto px-4 pt-6 space-y-4">
+      <main className="max-w-md mx-auto px-4 pt-6 space-y-4 w-full flex-1">
         {/* Urgent Turn Notification Banner */}
         {isMyTurn && (
-          <div className="bg-emerald-600 text-white p-4 rounded-2xl shadow-md text-center animate-in fade-in duration-200">
-            <div className="flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-wider">
-              <CheckCircle2 className="w-5 h-5" />
+          <div className="bg-emerald-700 text-white p-5 rounded-3xl shadow-lg text-center animate-in fade-in duration-200">
+            <div className="flex items-center justify-center gap-2 text-sm font-black uppercase tracking-wider">
+              <CheckCircle2 className="w-5 h-5 text-emerald-200" />
               <span>It's Your Turn Now!</span>
             </div>
-            <p className="text-xs font-medium mt-1 text-emerald-50">
-              Please enter {appointment?.room_number || 'Room 1'} ({appointment?.doctor_id === 'dr-ananya-sen' ? 'Dr. Ananya Sen' : 'Dr. Rohan Joshi'})'s consultation chamber.
+            <p className="text-xs font-semibold mt-1 text-emerald-100">
+              Please walk into {appointment?.room_number || 'Room 1'} ({appointment?.doctor_id === 'dr-ananya-sen' ? 'Dr. Ananya Sen' : 'Dr. Rohan Joshi'}).
             </p>
           </div>
         )}
 
         {isCompleted && (
-          <div className="bg-white border border-slate-200 p-4 rounded-2xl text-center shadow-sm">
+          <div className="bg-white border border-slate-200 p-5 rounded-3xl text-center shadow-xs">
             <div className="flex items-center justify-center gap-2 text-sm font-bold text-slate-900">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               <span>Consultation Completed</span>
@@ -183,144 +159,123 @@ function TokenContent() {
           </div>
         )}
 
-        {/* Tactile Digital Token Pass */}
+        {isCancelled && (
+          <div className="bg-rose-50 border border-rose-200 p-4 rounded-3xl text-center text-xs font-semibold text-rose-800">
+            This appointment token has been cancelled.
+          </div>
+        )}
+
+        {/* Digital Boarding Pass Container */}
         <div className="bg-white border border-slate-200/90 rounded-3xl shadow-sm overflow-hidden">
-          {/* Card Header */}
-          <div className="bg-teal-700 text-white p-6 text-center">
+          {/* Card Top Branding */}
+          <div className="bg-teal-800 text-white p-6 text-center relative">
             <span className="text-[10px] font-bold uppercase tracking-widest text-teal-200">
-              Clinic Digital Queue Pass
+              Digital Clinic Queue Pass
             </span>
             <h1 className="text-lg font-bold mt-1">Smile Care Dental Clinic</h1>
-            <p className="text-xs text-teal-100">Opp. Dombivli Station, Phadke Road</p>
+            <p className="text-xs text-teal-100">Opp. Dombivli Station, Phadke Road (East)</p>
           </div>
 
           {/* Large Token Slip Body */}
           <div className="p-6 text-center">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Your Assigned Token</p>
             <div className="my-2">
-              <span className="text-6xl font-black text-slate-900 tracking-tight">
+              <span className="text-6xl sm:text-7xl font-black text-slate-900 tracking-tight">
                 #{String(myToken).padStart(2, '0')}
               </span>
             </div>
 
-            <div className="inline-block bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 mt-1">
+            <div className="inline-block bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 mt-1">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900 text-white">
                   {appointment?.room_number || 'Room 1'}
                 </span>
-                <span className="text-xs font-semibold text-slate-700">
+                <span className="text-xs font-bold text-slate-800">
                   {appointment?.doctor_id === 'dr-ananya-sen' ? 'Dr. Ananya Sen' : 'Dr. Rohan Joshi'}
                 </span>
               </div>
               <p className="text-sm font-bold text-slate-900">{appointment?.patient_name || 'Rahul Kulkarni'}</p>
-              <p className="text-xs text-slate-500">{appointment?.service_name || 'Dental Consultation & X-Ray'}</p>
+              <p className="text-xs text-slate-500">{appointment?.service_name || 'Comprehensive Consultation & X-Ray'}</p>
             </div>
           </div>
 
-          {/* Perforated Divider */}
+          {/* Notched Perforation Line */}
           <div className="relative flex items-center justify-center px-4">
             <div className="w-5 h-5 bg-slate-100 rounded-full -ml-6 border-r border-slate-200"></div>
             <div className="flex-1 border-t-2 border-dashed border-slate-200"></div>
             <div className="w-5 h-5 bg-slate-100 rounded-full -mr-6 border-l border-slate-200"></div>
           </div>
 
-          {/* Queue Metrics Strip */}
+          {/* Live Queue Countdown Metrics */}
           <div className="p-6 bg-slate-50/70" role="status" aria-atomic="true">
             <div className="grid grid-cols-2 gap-4 text-center">
               <div className="border-r border-slate-200 pr-2">
-                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Now Inside</p>
-                <p className="text-2xl font-black text-teal-700 mt-1">
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Now In Room</p>
+                <p className="text-3xl font-black text-teal-800 mt-1">
                   {nowServingToken ? `#${String(nowServingToken).padStart(2, '0')}` : '--'}
                 </p>
                 <p className="text-[11px] text-slate-500 mt-0.5">In Consultation</p>
               </div>
 
               <div className="pl-2">
-                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Ahead of You</p>
-                <p className="text-2xl font-black text-slate-900 mt-1">{patientsAhead}</p>
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Ahead of You</p>
+                <p className="text-3xl font-black text-slate-900 mt-1">
+                  {isMyTurn ? '0' : patientsAhead}
+                </p>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  {patientsAhead === 0 ? 'You are next!' : `~${estimatedWaitMins} mins wait`}
+                  {isMyTurn ? 'Your turn!' : `~${estimatedWaitMins}m wait`}
                 </p>
               </div>
             </div>
-          </div>
 
-          {/* Interactive Stepper */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Live Progress</p>
-            <div className="flex items-center justify-between text-center relative">
-              <div className="flex-1 flex flex-col items-center">
-                <div className="w-6 h-6 rounded-full bg-teal-700 text-white flex items-center justify-center text-[10px] font-bold">
-                  ✓
-                </div>
-                <span className="text-[10px] font-semibold text-slate-700 mt-1">Booked</span>
-              </div>
-
-              <div className={`h-0.5 flex-1 ${isArrived || isMyTurn || isCompleted ? 'bg-teal-700' : 'bg-slate-200'}`}></div>
-
-              <div className="flex-1 flex flex-col items-center">
-                <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    isArrived || isMyTurn || isCompleted ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-400 border border-slate-300'
-                  }`}
-                >
-                  {isArrived || isMyTurn || isCompleted ? '✓' : '2'}
-                </div>
-                <span className="text-[10px] font-semibold text-slate-700 mt-1">In Lobby</span>
-              </div>
-
-              <div className={`h-0.5 flex-1 ${isMyTurn || isCompleted ? 'bg-teal-700' : 'bg-slate-200'}`}></div>
-
-              <div className="flex-1 flex flex-col items-center">
-                <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    isMyTurn ? 'bg-emerald-600 text-white animate-pulse' : isCompleted ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-400 border border-slate-300'
-                  }`}
-                >
-                  {isCompleted ? '✓' : '3'}
-                </div>
-                <span className="text-[10px] font-semibold text-slate-700 mt-1">Doctor Room</span>
+            {/* Commuter Journey Stepper */}
+            <div className="mt-6 pt-5 border-t border-slate-200 space-y-2">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Live Commuter Status</p>
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-700 pt-1">
+                <span className="flex items-center gap-1 text-teal-800">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Token Confirmed</span>
+                </span>
+                <span>·</span>
+                <span className={`flex items-center gap-1 ${patientsAhead <= 1 ? 'text-teal-800 font-bold' : 'text-slate-400'}`}>
+                  <Train className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Platform Walk</span>
+                </span>
+                <span>·</span>
+                <span className={`flex items-center gap-1 ${isMyTurn ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}>
+                  <span>Chamber</span>
+                </span>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Dombivli Commuter Card */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-            <Train className="w-4 h-4 text-teal-700" />
-            <span>Phadke Road Commuter Guidance</span>
-          </div>
-          <p className="text-xs text-slate-600 leading-relaxed">
-            The clinic is located 2 minutes on foot from Dombivli Station Platform 1 exit. When 1 patient remains ahead of you, start walking from the station.
-          </p>
+            {/* Delay & Cancel Controls */}
+            {!isMyTurn && !isCompleted && !isCancelled && (
+              <div className="mt-5 pt-4 border-t border-slate-200 flex items-center justify-between gap-2">
+                <button
+                  onClick={handleDelay}
+                  disabled={delaying}
+                  className="flex-1 py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold rounded-xl transition text-center min-h-[42px]"
+                >
+                  {delaying ? 'Buffering...' : '🚆 Running Late? Add +15m Buffer'}
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="py-2.5 px-3 text-slate-400 hover:text-rose-600 text-xs font-medium transition min-h-[42px]"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
 
-          {/* Running late self-service trigger */}
-          {!isMyTurn && !isCompleted && appointment?.status !== 'cancelled' && (
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-              <button
-                onClick={handleDelay}
-                disabled={delaying}
-                className="flex-1 py-1.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold rounded-lg transition text-center"
-              >
-                {delaying ? 'Buffering...' : '🚆 Running Late? Add +15m Buffer'}
-              </button>
-              <button
-                onClick={handleCancel}
-                className="py-1.5 px-3 text-slate-400 hover:text-rose-600 text-xs font-medium transition"
-              >
-                Cancel Slot
-              </button>
-            </div>
-          )}
-          {statusFeedback && (
-            <p className="text-xs font-semibold text-teal-700 pt-1">{statusFeedback}</p>
-          )}
+            {statusFeedback && (
+              <p className="text-xs font-bold text-teal-800 pt-2 text-center">{statusFeedback}</p>
+            )}
+          </div>
         </div>
 
         {/* Chime Alert Setting */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <Bell className="w-4 h-4 text-teal-700" />
             <div>
               <p className="text-xs font-bold text-slate-900">Audio Chime When Called</p>
@@ -329,51 +284,45 @@ function TokenContent() {
           </div>
           <button
             onClick={() => setAlertEnabled(!alertEnabled)}
-            className={`w-10 h-6 rounded-full p-0.5 transition ${alertEnabled ? 'bg-teal-700' : 'bg-slate-300'}`}
+            className={`w-11 h-6 rounded-full p-0.5 transition ${alertEnabled ? 'bg-teal-700' : 'bg-slate-300'}`}
+            aria-label="Toggle chime alerts"
           >
-            <div className={`w-5 h-5 rounded-full bg-white transition transform ${alertEnabled ? 'translate-x-4' : 'translate-x-0'}`}></div>
+            <div className={`w-5 h-5 rounded-full bg-white transition transform ${alertEnabled ? 'translate-x-5' : 'translate-x-0'}`}></div>
           </button>
         </div>
 
-        {/* Quick Contact & Navigation */}
-        <div className="space-y-2">
-          <Link
-            href={`/print/${id}`}
-            target="_blank"
-            className="w-full py-2.5 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-800 transition flex items-center justify-center gap-2 shadow-xs active:scale-[0.98]"
-          >
-            <Printer className="w-4 h-4 text-slate-600" />
-            <span>Print 80mm Physical Thermal Slip</span>
-          </Link>
+        {/* Action Buttons Tray */}
+        <div className="space-y-2.5 pt-1">
+          <div className="grid grid-cols-2 gap-2">
+            <Link
+              href={`/print/${id}`}
+              target="_blank"
+              className="py-3 px-3 rounded-2xl bg-white border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-800 transition flex items-center justify-center gap-1.5 shadow-2xs min-h-[44px]"
+            >
+              <Printer className="w-4 h-4 text-slate-600" />
+              <span>Print 80mm Slip</span>
+            </Link>
+
+            <button
+              onClick={handleCopyLink}
+              className="py-3 px-3 rounded-2xl bg-white border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-800 transition flex items-center justify-center gap-1.5 shadow-2xs min-h-[44px]"
+            >
+              {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4 text-slate-600" />}
+              <span>{copied ? 'Link Copied!' : 'Share Token'}</span>
+            </button>
+          </div>
 
           <a
             href="https://wa.me/919820144552?text=Namaste%20Smile%20Care%20Clinic,%20I%20have%20an%20inquiry%20regarding%20my%20appointment."
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-3 px-4 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-xs font-semibold text-emerald-900 transition flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+            className="w-full py-3 px-4 rounded-2xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-xs font-bold text-emerald-900 transition flex items-center justify-center gap-2 shadow-2xs min-h-[44px]"
           >
             <MessageSquare className="w-4 h-4 text-emerald-600" />
             <span>Chat with Reception on WhatsApp (+91 98201 44552)</span>
           </a>
-
-          <a
-            href="tel:+919820144552"
-            className="w-full py-3 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-800 transition flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
-          >
-            <Phone className="w-4 h-4 text-teal-700" />
-            <span>Call Reception Desk</span>
-          </a>
-          <a
-            href="https://maps.google.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full py-3 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-800 transition flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
-          >
-            <MapPin className="w-4 h-4 text-slate-500" />
-            <span>Open Location in Google Maps</span>
-          </a>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
@@ -383,10 +332,7 @@ export default function TokenPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-teal-700 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-sm font-semibold">Loading token tracker...</span>
-          </div>
+          <div className="text-sm font-semibold">Loading token...</div>
         </div>
       }
     >
