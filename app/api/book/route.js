@@ -5,7 +5,7 @@ export async function POST(request) {
   try {
     const db = getDb();
     const body = await request.json();
-    const { patientName, patientPhone, serviceId, slotTime, date } = body;
+    const { patientName, patientPhone, serviceId, slotTime, date, doctorId } = body;
 
     if (!patientName || !patientPhone || !serviceId) {
       return NextResponse.json({ success: false, error: 'Name, phone, and service are required' }, { status: 400 });
@@ -18,7 +18,14 @@ export async function POST(request) {
     }
 
     const clinic = db.prepare('SELECT * FROM clinics LIMIT 1').get();
-    const doctor = db.prepare('SELECT * FROM doctors WHERE clinic_id = ? LIMIT 1').get(clinic.id);
+    let doctor = null;
+    if (doctorId) {
+      doctor = db.prepare('SELECT * FROM doctors WHERE id = ? AND clinic_id = ?').get(doctorId, clinic.id);
+    }
+    if (!doctor) {
+      doctor = db.prepare('SELECT * FROM doctors WHERE clinic_id = ? LIMIT 1').get(clinic.id);
+    }
+    const roomNumber = doctor?.room_number || 'Room 1';
 
     // Calculate next token number for today
     const maxTokenResult = db.prepare(`
@@ -30,9 +37,9 @@ export async function POST(request) {
     db.prepare(`
       INSERT INTO appointments (
         id, clinic_id, doctor_id, patient_name, patient_phone, 
-        service_id, service_name, service_price, token_number, date, slot_time, status
+        service_id, service_name, service_price, token_number, date, slot_time, status, room_number
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'booked')
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'booked', ?)
     `).run(
       appointmentId,
       clinic.id,
@@ -44,7 +51,8 @@ export async function POST(request) {
       service.price_inr,
       nextToken,
       today,
-      slotTime || '07:00 PM'
+      slotTime || '07:00 PM',
+      roomNumber
     );
 
     const createdAppointment = db.prepare('SELECT * FROM appointments WHERE id = ?').get(appointmentId);

@@ -6,13 +6,25 @@ export async function GET(request) {
     const db = getDb();
     const today = new Date().toISOString().split('T')[0];
 
-    const appointments = db.prepare(`
-      SELECT * FROM appointments 
-      WHERE date = ? 
-      ORDER BY token_number ASC
-    `).all(today);
+    const url = new URL(request.url);
+    const filterDoctor = url.searchParams.get('doctor');
+    const filterRoom = url.searchParams.get('room');
 
-    const nowServing = appointments.find(a => a.status === 'in_progress') || null;
+    let query = `SELECT * FROM appointments WHERE date = ?`;
+    const params = [today];
+    if (filterDoctor) {
+      query += ` AND doctor_id = ?`;
+      params.push(filterDoctor);
+    } else if (filterRoom) {
+      query += ` AND room_number = ?`;
+      params.push(filterRoom);
+    }
+    query += ` ORDER BY token_number ASC`;
+
+    const appointments = db.prepare(query).all(...params);
+
+    const nowServingList = appointments.filter(a => a.status === 'in_progress');
+    const nowServing = nowServingList[0] || null;
     const waiting = appointments.filter(a => a.status === 'arrived');
     const upcoming = appointments.filter(a => a.status === 'booked');
     const completed = appointments.filter(a => a.status === 'completed');
@@ -26,6 +38,7 @@ export async function GET(request) {
       success: true,
       today,
       nowServing,
+      nowServingList,
       waiting,
       upcoming,
       completed,
@@ -48,34 +61,46 @@ export async function POST(request) {
   try {
     const db = getDb();
     const body = await request.json();
-    const { action, appointmentId, patientName, patientPhone, serviceName, servicePrice, notes, prescription } = body;
+    const { action, appointmentId, patientName, patientPhone, serviceName, servicePrice, doctorId, roomNumber, notes, prescription } = body;
     const today = new Date().toISOString().split('T')[0];
 
     if (action === 'call_next') {
-      // 1. Mark current in_progress as completed
+      const targetRoom = roomNumber || 'Room 1';
+      const targetDoctor = doctorId || (targetRoom === 'Room 2' ? 'dr-ananya-sen' : 'dr-rohan-joshi');
+
+      // 1. Mark current in_progress for this room/doctor as completed
       db.prepare(`
         UPDATE appointments 
         SET status = 'completed', completed_at = datetime('now') 
-        WHERE date = ? AND status = 'in_progress'
-      `).run(today);
+        WHERE date = ? AND status = 'in_progress' AND (room_number = ? OR doctor_id = ?)
+      `).run(today, targetRoom, targetDoctor);
 
-      // 2. Find next waiting patient (arrived first, then booked)
-      const nextPatient = db.prepare(`
+      // 2. Find next waiting patient (matching doctor/room first or unassigned)
+      let nextPatient = db.prepare(`
         SELECT * FROM appointments 
-        WHERE date = ? AND status IN ('arrived', 'booked') 
+        WHERE date = ? AND status IN ('arrived', 'booked') AND (doctor_id = ? OR room_number = ?)
         ORDER BY CASE WHEN status = 'arrived' THEN 1 ELSE 2 END, token_number ASC 
         LIMIT 1
-      `).get(today);
+      `).get(today, targetDoctor, targetRoom);
+
+      if (!nextPatient) {
+        nextPatient = db.prepare(`
+          SELECT * FROM appointments 
+          WHERE date = ? AND status IN ('arrived', 'booked')
+          ORDER BY CASE WHEN status = 'arrived' THEN 1 ELSE 2 END, token_number ASC 
+          LIMIT 1
+        `).get(today);
+      }
 
       if (nextPatient) {
         db.prepare(`
           UPDATE appointments 
-          SET status = 'in_progress', called_at = datetime('now') 
+          SET status = 'in_progress', called_at = datetime('now'), room_number = ?, doctor_id = ?
           WHERE id = ?
-        `).run(nextPatient.id);
+        `).run(targetRoom, targetDoctor, nextPatient.id);
       }
 
-      return NextResponse.json({ success: true, nextPatient });
+      return NextResponse.json({ success: true, nextPatient, room: targetRoom });
     }
 
     if (action === 'add_walk_in') {
@@ -85,24 +110,27 @@ export async function POST(request) {
       const nextToken = (maxTokenResult.max_token || 0) + 1;
       const newId = `apt-${Date.now().toString().slice(-6)}`;
       const nowTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      const assignedRoom = roomNumber || 'Room 1';
+      const assignedDoctor = doctorId || (assignedRoom === 'Room 2' ? 'dr-ananya-sen' : 'dr-rohan-joshi');
 
       db.prepare(`
-        INSERT INTO appointments (id, clinic_id, doctor_id, patient_name, patient_phone, service_name, service_price, token_number, date, slot_time, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'arrived')
+        INSERT INTO appointments (id, clinic_id, doctor_id, patient_name, patient_phone, service_name, service_price, token_number, date, slot_time, status, room_number)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'arrived', ?)
       `).run(
         newId,
         'smile-care-dombivli',
-        'dr-rohan-joshi',
+        assignedDoctor,
         patientName || 'Walk-In Patient',
         patientPhone || 'Walk-In',
-        serviceName || 'Consultation & Checkup',
+        serviceName || 'Comprehensive Dental Consultation & X-Ray',
         servicePrice || 500,
         nextToken,
         today,
-        nowTime
+        nowTime,
+        assignedRoom
       );
 
-      return NextResponse.json({ success: true, tokenNumber: nextToken, id: newId });
+      return NextResponse.json({ success: true, tokenNumber: nextToken, id: newId, room: assignedRoom });
     }
 
     if (action === 'mark_arrived' && appointmentId) {

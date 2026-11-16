@@ -23,6 +23,7 @@ export default function BookPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // Form states
+  const [selectedDoctor, setSelectedDoctor] = useState('');
   const [selectedService, setSelectedService] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('07:15 PM');
   const [patientName, setPatientName] = useState('');
@@ -42,6 +43,9 @@ export default function BookPage() {
           setClinicData(data);
           if (data.services && data.services.length > 0) {
             setSelectedService(data.services[0].id);
+          }
+          if (data.doctors && data.doctors.length > 0) {
+            setSelectedDoctor(data.doctors[0].id);
           }
         }
         setLoading(false);
@@ -74,7 +78,8 @@ export default function BookPage() {
           patientName,
           patientPhone,
           serviceId: selectedService,
-          slotTime: selectedSlot
+          slotTime: selectedSlot,
+          doctorId: selectedDoctor
         })
       });
 
@@ -103,7 +108,8 @@ export default function BookPage() {
   }
 
   const clinic = clinicData?.clinic;
-  const doctor = clinicData?.doctors?.[0];
+  const doctors = clinicData?.doctors || [];
+  const doctor = doctors.find(d => d.id === selectedDoctor) || doctors[0];
   const services = clinicData?.services || [];
 
   return (
@@ -159,10 +165,44 @@ export default function BookPage() {
 
         {/* Booking Form */}
         <form onSubmit={handleBooking} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
-          {/* Step 1: Select Treatment */}
+          {/* Step 1: Select Doctor & Room */}
+          {doctors.length > 1 && (
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-700 block mb-3">
+                1. Select Doctor & Consultation Room
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {doctors.map((doc) => {
+                  const isSelected = selectedDoctor === doc.id;
+                  return (
+                    <div
+                      key={doc.id}
+                      onClick={() => setSelectedDoctor(doc.id)}
+                      className={`p-3.5 rounded-xl border cursor-pointer transition ${
+                        isSelected
+                          ? 'border-teal-700 bg-teal-50/50 ring-1 ring-teal-700'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900 text-white">
+                          {doc.room_number || 'Room 1'}
+                        </span>
+                        {isSelected && <CheckCircle2 className="w-4 h-4 text-teal-700" />}
+                      </div>
+                      <p className="font-bold text-sm text-slate-900">{doc.name}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{doc.specialization}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Select Treatment */}
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-slate-700 block mb-3">
-              1. Select Dental Treatment
+              {doctors.length > 1 ? '2.' : '1.'} Select Dental Treatment
             </label>
             <div className="space-y-2">
               {services.map((srv) => {

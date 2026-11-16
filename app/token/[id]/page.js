@@ -15,7 +15,8 @@ import {
   Check,
   Circle,
   MessageSquare,
-  XCircle
+  XCircle,
+  Printer
 } from 'lucide-react';
 import { playClinicChime } from '@/lib/sound';
 
@@ -167,7 +168,7 @@ function TokenContent() {
               <span>It's Your Turn Now!</span>
             </div>
             <p className="text-xs font-medium mt-1 text-emerald-50">
-              Please enter Dr. Rohan Joshi's consultation chamber.
+              Please enter {appointment?.room_number || 'Room 1'} ({appointment?.doctor_id === 'dr-ananya-sen' ? 'Dr. Ananya Sen' : 'Dr. Rohan Joshi'})'s consultation chamber.
             </p>
           </div>
         )}
@@ -203,6 +204,14 @@ function TokenContent() {
             </div>
 
             <div className="inline-block bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 mt-1">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900 text-white">
+                  {appointment?.room_number || 'Room 1'}
+                </span>
+                <span className="text-xs font-semibold text-slate-700">
+                  {appointment?.doctor_id === 'dr-ananya-sen' ? 'Dr. Ananya Sen' : 'Dr. Rohan Joshi'}
+                </span>
+              </div>
               <p className="text-sm font-bold text-slate-900">{appointment?.patient_name || 'Rahul Kulkarni'}</p>
               <p className="text-xs text-slate-500">{appointment?.service_name || 'Dental Consultation & X-Ray'}</p>
             </div>
@@ -328,6 +337,15 @@ function TokenContent() {
 
         {/* Quick Contact & Navigation */}
         <div className="space-y-2">
+          <Link
+            href={`/print/${id}`}
+            target="_blank"
+            className="w-full py-2.5 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-800 transition flex items-center justify-center gap-2 shadow-xs active:scale-[0.98]"
+          >
+            <Printer className="w-4 h-4 text-slate-600" />
+            <span>Print 80mm Physical Thermal Slip</span>
+          </Link>
+
           <a
             href="https://wa.me/919820144552?text=Namaste%20Smile%20Care%20Clinic,%20I%20have%20an%20inquiry%20regarding%20my%20appointment."
             target="_blank"

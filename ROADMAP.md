@@ -60,13 +60,14 @@
 - [x] **2.3 Clinic Accounting & Daily Reports**
   - [x] Daily Revenue CSV / Excel Export endpoint (`/api/export`) for reception cash register.
   - [x] Printable Patient Treatment & Prescription Slip (Official letterhead PDF/print view for doctor in `/doctor`).
-- [ ] **2.4 Multi-Doctor Clinic Support**
-  - [ ] Toggle between multiple doctors / treatment chairs (e.g. *Dr. Rohan Joshi - Room 1* and *Dr. Ananya Sen - Room 2*).
-  - [ ] Separate token series (Tokens A1..A20 vs B1..B20).
+- [x] **2.4 Multi-Doctor Clinic Support & Rooms**
+  - [x] Toggle between multiple doctors / rooms (*Dr. Rohan Joshi - Room 1* and *Dr. Ananya Sen - Room 2*).
+  - [x] Room-specific calling in `/reception` and `/doctor`.
+  - [x] Doctor selection in `/book` and walk-in registration.
 
 ---
 
-## 🟡 Phase 3: Hardware Integration & Waiting Room TV Mode (IN PROGRESS)
+## ✅ Phase 3: Hardware Integration & Waiting Room TV Mode (COMPLETE)
 
 *Goal: Make the clinic look ultra-modern with hardware integrations that impress patients in person.*
 
@@ -74,21 +75,23 @@
   - [x] Full-screen, distraction-free display board designed for a 43" or 55" waiting room TV ([/display](http://localhost:3001/display)).
   - [x] Audible two-tone hospital chime + voice synthesis: *"Token Number 4, please proceed to Room 1"*.
   - [x] QR Code card: *"Scan to track your token on your phone while having tea outside"*.
-- [ ] **3.2 Thermal Slip Printer Support**
-  - [ ] Web Print API formatting for standard 80mm / 58mm POS thermal receipt printers.
-  - [ ] Prints a physical slip for elderly or walk-in patients who prefer paper.
+- [x] **3.2 Thermal Slip Printer Support (`/print/[id]`)**
+  - [x] Web Print API formatting for standard 80mm / 58mm POS thermal receipt printers.
+  - [x] Prints physical ticket slip for elderly or walk-in patients who prefer paper with mobile QR tracking.
+  - [x] One-click "Print Slip" triggers on reception cards and instant walk-in notifications.
 - [ ] **3.3 Offline Desktop App Packaging**
   - [ ] Package SlotCraft into a standalone Mac (`.dmg`) and Windows (`.exe`) app via **Pake** for front-desk PCs.
   - [ ] Auto-starts on PC boot without needing terminal commands.
 
 ---
 
-## ⚪ Phase 4: Local Go-To-Market & Commercialization (PLANNED)
+## 🟡 Phase 4: Local Go-To-Market & Commercialization (CURRENT FOCUS)
 
 *Goal: Turn SlotCraft into a pitchable, revenue-generating SaaS product for Dombivli and MMR clinics.*
 
-- [ ] **4.1 Clinic Onboarding Wizard (`/setup`)**
-  - [ ] Self-serve onboarding form: Doctor sets clinic name, address, consultation fee, and doctor list in 2 minutes.
+- [x] **4.1 Clinic Settings & Configuration Wizard (`/settings`)**
+  - [x] Self-serve settings form: Doctor/receptionist customizes clinic name, address, consultation fee, doctor credentials, and commuter rush hours.
+  - [x] One-click demo reseed button for investor/doctor pitches.
 - [ ] **4.2 One-Page Doctor Pitch Flyer (PDF)**
   - [ ] Designed flyer highlighting the core hook: *"Stop waiting room chaos during 6:30 PM–9:00 PM Dombivli commuter rush"*.
   - [ ] Pricing model comparison: ₹999/month flat SaaS vs ₹5,000+ clunky legacy systems.

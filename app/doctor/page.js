@@ -18,7 +18,8 @@ import {
   ExternalLink,
   Printer,
   Download,
-  X
+  X,
+  Settings
 } from 'lucide-react';
 
 export default function DoctorPortal() {
@@ -31,6 +32,7 @@ export default function DoctorPortal() {
   const [prescription, setPrescription] = useState('');
   const [saveStatus, setSaveStatus] = useState('');
   const [activeTab, setActiveTab] = useState('waiting');
+  const [doctorRoom, setDoctorRoom] = useState('Room 1');
 
   const fetchQueue = async () => {
     try {
@@ -100,7 +102,11 @@ export default function DoctorPortal() {
         await fetch('/api/queue', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'call_next' })
+          body: JSON.stringify({
+            action: 'call_next',
+            roomNumber: doctorRoom,
+            doctorId: doctorRoom === 'Room 2' ? 'dr-ananya-sen' : 'dr-rohan-joshi'
+          })
         });
       }
 
@@ -120,7 +126,11 @@ export default function DoctorPortal() {
       await fetch('/api/queue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'call_next' })
+        body: JSON.stringify({
+          action: 'call_next',
+          roomNumber: doctorRoom,
+          doctorId: doctorRoom === 'Room 2' ? 'dr-ananya-sen' : 'dr-rohan-joshi'
+        })
       });
       await fetchQueue();
     } catch (err) {
@@ -169,16 +179,47 @@ export default function DoctorPortal() {
           <div className="h-4 w-px bg-slate-200"></div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-bold text-slate-900 text-sm sm:text-base">Dr. Rohan Joshi</h1>
+              <h1 className="font-bold text-slate-900 text-sm sm:text-base">
+                {doctorRoom === 'Room 1' ? 'Dr. Rohan Joshi' : 'Dr. Ananya Sen'}
+              </h1>
               <span className="text-[10px] font-bold uppercase tracking-wider bg-teal-50 text-teal-800 px-2 py-0.5 rounded border border-teal-200">
-                Consultation Room 1
+                {doctorRoom}
               </span>
             </div>
-            <p className="text-[11px] text-slate-500">Smile Care Dental Clinic · Phadke Road, Dombivli (E)</p>
+            <p className="text-[11px] text-slate-500">
+              {doctorRoom === 'Room 1' ? 'Orthodontics & General Dentistry' : 'Pediatric & Cosmetic Dentistry'} · Smile Care Clinic
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="flex rounded-lg bg-slate-100 p-1 border border-slate-200">
+            <button
+              onClick={() => setDoctorRoom('Room 1')}
+              className={`px-2.5 py-1 text-xs font-bold rounded transition ${
+                doctorRoom === 'Room 1' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Room 1
+            </button>
+            <button
+              onClick={() => setDoctorRoom('Room 2')}
+              className={`px-2.5 py-1 text-xs font-bold rounded transition ${
+                doctorRoom === 'Room 2' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Room 2
+            </button>
+          </div>
+
+          <Link
+            href="/settings"
+            className="text-xs text-slate-600 hover:text-slate-900 font-medium px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition hidden lg:inline-flex items-center gap-1.5"
+            title="Clinic Settings & Multi-Doctor Rooms"
+          >
+            <Settings className="w-3.5 h-3.5 text-slate-500" />
+            <span>Settings</span>
+          </Link>
           <a
             href="/api/export"
             download

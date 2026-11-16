@@ -25,11 +25,13 @@ In suburban Mumbai transit hubs like **Dombivli East (Phadke Road / Manpada Road
 | Portal | Route | Target User | Key Capabilities |
 |---|---|---|---|
 | **Commercial Hub** | `/` | Everyone / Doctors | Interactive live queue simulation, clinic overview, ROI calculator & FAQ. |
-| **Patient Booking** | `/book` | Commuters & Patients | 3-step mobile booking (Treatment $\rightarrow$ Slot $\rightarrow$ Details) & immediate digital token issuance. |
+| **Patient Booking** | `/book` | Commuters & Patients | Doctor/Room selection, 3-step mobile booking (Treatment $\rightarrow$ Slot $\rightarrow$ Details) & immediate digital token issuance. |
 | **Live Digital Token** | `/token/[id]` | Commuters | Live boarding pass countdown, 3-step progress bar, station commute guidance, self-service +15m delay buffer & WhatsApp link. |
-| **Reception Command Desk** | `/reception` | Front-Desk Staff | One-tap "Call Next Patient", keyboard hotkey (`N`), 5-second walk-in modal, live patient search, and CSV register export. |
-| **Doctor Consultation Room** | `/doctor` | Clinic Owner / Doctor | Clinical notes, Rx presets, printable official clinic letterhead (`window.print()`), and daily earnings counter (₹). |
+| **80mm POS Thermal Slip** | `/print/[id]` | Walk-ins & Seniors | Standard 80mm/58mm thermal receipt layout for walk-in tickets with mobile QR tracker and print CSS. |
+| **Reception Command Desk** | `/reception` | Front-Desk Staff | Multi-room caller (Room 1 & 2), keyboard hotkey (`N`), 5-second walk-in modal, instant print slip trigger, live search, and CSV register export. |
+| **Doctor Consultation Room** | `/doctor` | Clinic Owner / Doctor | Multi-room toggle (Dr. Rohan / Dr. Ananya), clinical notes, Rx presets, printable letterhead, and daily earnings counter (₹). |
 | **Waiting Room TV Mode** | `/display` | Waiting Lobby | Full-screen large-format board for 43"/55" wall monitors with automated two-tone hospital chimes and speech synthesis. |
+| **Clinic Settings & Rooms** | `/settings` | Admin / Doctor | Manage clinic branding, Doctor 1 & 2 credentials/rooms, Dombivli evening rush hours, and reseed demo queue. |
 
 ---
 
